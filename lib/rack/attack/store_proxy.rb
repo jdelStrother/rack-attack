@@ -22,9 +22,10 @@ module Rack
 
         if store.instance_variable_defined?(:@data)
           client = store.instance_variable_get(:@data)
+          client_class = PoolProxy.unwrap_connection_pool_class(client)
         end
 
-        if ACTIVE_SUPPORT_WRAPPER_CLASSES.include?(store.class.to_s) && ACTIVE_SUPPORT_CLIENTS.include?(client.class.to_s)
+        if ACTIVE_SUPPORT_WRAPPER_CLASSES.include?(store.class.to_s) && ACTIVE_SUPPORT_CLIENTS.include?(client_class.to_s)
           client
         else
           store
