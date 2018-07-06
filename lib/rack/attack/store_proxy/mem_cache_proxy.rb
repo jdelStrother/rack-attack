@@ -3,14 +3,10 @@
 module Rack
   class Attack
     module StoreProxy
-      class MemCacheProxy < SimpleDelegator
+      class MemCacheProxy < PoolProxy
         def self.handle?(store)
-          defined?(::MemCache) && store.is_a?(::MemCache)
-        end
-
-        def initialize(store)
-          super(store)
-          stub_with_if_missing
+          return false unless defined?(::MemCache)
+          unwrap_connection_pool_class(store) <= ::MemCache
         end
 
         def read(key)
@@ -35,16 +31,6 @@ module Rack
             client.delete(key)
           end
         rescue MemCache::MemCacheError
-        end
-
-        private
-
-        def stub_with_if_missing
-          unless __getobj__.respond_to?(:with)
-            class << self
-              def with; yield __getobj__; end
-            end
-          end
         end
       end
     end

@@ -1,26 +1,12 @@
 # frozen_string_literal: true
 
-require 'delegate'
-
 module Rack
   class Attack
     module StoreProxy
-      class DalliProxy < SimpleDelegator
+      class DalliProxy < PoolProxy
         def self.handle?(store)
           return false unless defined?(::Dalli)
-
-          # Consider extracting to a separate Connection Pool proxy to reduce
-          # code here and handle clients other than Dalli.
-          if defined?(::ConnectionPool) && store.is_a?(::ConnectionPool)
-            store.with { |conn| conn.is_a?(::Dalli::Client) }
-          else
-            store.is_a?(::Dalli::Client)
-          end
-        end
-
-        def initialize(client)
-          super(client)
-          stub_with_if_missing
+          unwrap_connection_pool_class(store) <= ::Dalli::Client
         end
 
         def read(key)
@@ -49,16 +35,6 @@ module Rack
             client.delete(key)
           end
         rescue Dalli::DalliError
-        end
-
-        private
-
-        def stub_with_if_missing
-          unless __getobj__.respond_to?(:with)
-            class << self
-              def with; yield __getobj__; end
-            end
-          end
         end
       end
     end
